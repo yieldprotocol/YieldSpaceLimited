@@ -1,4 +1,4 @@
-import { toBn, tradeToTick, sellFYToken, tsToRate, tsToRate2, tickNumberToRatio, valueAtTick } from './yieldMath';
+import { toBn, tradeToTick, sellFYToken, tsToRate, tsToRate2, tickNumberToRatio, valueAtTick, simpleInvariant } from './yieldMath';
 import { ethers, BigNumber, BigNumberish } from 'ethers';
 import { MAX_256, WAD_BN, ZERO_BN } from './constants';
 import { Decimal } from 'decimal.js';
@@ -151,6 +151,7 @@ console.log("\n1. Inialialize market by depositing at 0% tick");
 type TickObj = {
   value: BigNumber;
   shares: BigNumber;
+  valueAbove: BigNumber;
   addedFy: BigNumber;
   fyRemaining: BigNumber;
 };
@@ -161,10 +162,11 @@ var base = WAD_BN.mul(1000);
 var activeTick = 0;
 var entry = {value: base, 
   shares: base,
+  valueAbove: ZERO_BN,
   addedFy: ZERO_BN,
   fyRemaining: ZERO_BN
 };
-ticks.set(0, entry)
+ticks.set(0, entry);
 //console.log("0% tick", ticks.get(0));
 //set current tick information 
 //update globals
@@ -182,6 +184,7 @@ var baseToAdd = WAD_BN.mul(100);
 var sharesToAdd = WAD_BN.mul(100);
 var entry = {value: baseToAdd,
  shares: sharesToAdd, 
+ valueAbove: ZERO_BN,
  addedFy: ZERO_BN,
  fyRemaining: ZERO_BN
 };
@@ -225,11 +228,12 @@ console.log("fyToken to add ", fyToAdd425.toString())
 //valueAbove: currentBase};
 var updateTick3 = ticks.get(3)!;
 updateTick3['addedFy'] = fyToAdd425;
+updateTick3['valueAbove'] = currentBase;
 ticks.set(3, updateTick3)
 //console.log(ticks.get(3))
 
 //update globals
-valueAbove = currentBase;
+//valueAbove = currentBase;
 currentBase = currentBase.add(baseToAdd425);
 currentFy = currentFy.add(fyToAdd425);
 activeTick = 3;
@@ -258,13 +262,60 @@ currentFy = currentFy.add(fyToTrade810);
 console.log("base after trade", currentBase.toString());
 console.log("fyToken after trade", currentFy.toString());
 
+// Examine addition properties of invariant
+/*
+console.log("\n Addition Properties");
+var time = "76000";
+const baseForToAdd1 = WAD_BN.mul(100);
+const baseRatioForToAdd1 = baseForToAdd1.add(currentBase).mul(WAD_BN).div(currentBase);
+const fyTokenReservesAfterAdd1 = baseRatioForToAdd1.mul(currentFy).div(WAD_BN); 
+const fyTokensToAdd1 = fyTokenReservesAfterAdd1.sub(currentFy);
+const invariant1 = simpleInvariant(
+  baseForToAdd1,
+  fyTokensToAdd1,
+  time,
+  18,
+  true
+);
+
+
+console.log("base to Add", baseForToAdd1.toString());
+console.log("fyTokens to Add", fyTokensToAdd1.toString());
+console.log("invariant for add", invariant1.toString());
+
+const invariant2 = simpleInvariant(
+  currentBase,
+  currentFy,
+  time,
+  18,
+  true
+);
+console.log("base", currentBase.toString());
+console.log("fyToken", currentFy.toString());
+console.log("invariant", invariant2.toString());
+
+const invariant3 = simpleInvariant(
+  currentBase.add(baseForToAdd1),
+  currentFy.add(fyTokensToAdd1),
+  time,
+  18,
+  true
+);
+
+console.log("combined than invariant", invariant3.toString());
+console.log("invariant than combined ", invariant1.add(invariant2).toString());
+*/
+
+//Now let's change the time!
+//var time = "76000";
+//var time = "7776000";
 
 // 5A.
 
 console.log("\n6. Add liquidity at 3% ");
 var tickInfo = ticks.get(3)!;
 const val = tickInfo['value'];
-const valAbove = valueAbove;
+const valAbove = tickInfo['valueAbove'];
 const threeShares = tickInfo['shares'];
 console.log("Three: value", val.toString());
 console.log("Three: valAbove", valAbove.toString());
@@ -364,8 +415,51 @@ console.log("fyToken after add", currentFy.toString());
 
 
 
+//5B.
+console.log("\n7. Now add liquidity at 1% ");
+
+console.log("Add 100 base")
+const newBase = WAD_BN.mul(100);
+
+const oBaseRatioForToAdd = newBase.add(currentBase).mul(WAD_BN).div(currentBase);
+const oFyTokenReservesAfterAdd = oBaseRatioForToAdd.mul(currentFy).div(WAD_BN); 
+const oFyTokensToAdd = oFyTokenReservesAfterAdd.sub(currentFy);
+console.log("Base to Add", newBase.toString());
+console.log("fyTokens to Add", oFyTokensToAdd.toString());
+console.log("baseRatioForToAdd", oBaseRatioForToAdd.toString());
+console.log("fyTokenReservesAfterAdd", oFyTokenReservesAfterAdd.toString());
+
+
+const [baseToTrade634, fyToTrade634] = tradeToTick(
+  currentBase,
+  currentFy,
+  threeRatio,
+  time,
+  18,
+  true
+);
+
+const oBaseEquivalent = currentBase.add(baseToTrade634);
+const oFyEquivalent = currentFy.add(fyToTrade634);
+var tickInfo = ticks.get(3)!;
+const oVal = tickInfo['value'];
+const oValAbove = tickInfo['valueAbove'];
+const oThreeShares = tickInfo['shares'];
+const oValueRecorded = oVal.add(oValAbove);
+
+const oBaseToThreeTick = oBaseRatioForToAdd.mul(oBaseEquivalent).div(WAD_BN);
+const oFyToThreeTick = oBaseRatioForToAdd.mul(oFyEquivalent).div(WAD_BN);
+console.log("baseToThreeTick", baseToThreeTick.toString());
+console.log("fyToThreeTick",fyToThreeTick.toString());
+
+
+
+
+
+const oneRatio = tickNumberToRatio(1, ts);
+
 // 6.
-console.log("\n6. Now trade back to 3% ");
+console.log("\n8. Now trade back to 3% ");
 
 const [baseToTrade361, fyToTrade361] = tradeToTick(
   currentBase,
@@ -383,7 +477,7 @@ console.log("base after trade", currentBase.toString());
 console.log("fyToken after trade", currentFy.toString());
 
 // 7.
-console.log("\n7. Now remove 3% liquidity from active pool");
+console.log("\n9. Now remove 3% liquidity from active pool");
 
 const three_shares = ticks.get(3)!['shares'];
 const total_shares = three_shares.add(valueAbove); 
@@ -406,7 +500,7 @@ console.log("base after trade", currentBase.toString());
 console.log("fyToken after trade", currentFy.toString());
 
 // 8. 
-console.log("\n8. Now trade to 2%");
+console.log("\n10. Now trade to 2%");
 
 const twoRatio = tickNumberToRatio(2, ts);
 
@@ -426,7 +520,7 @@ console.log("base after trade", currentBase.toString());
 console.log("fyToken after trade", currentFy.toString());
 
 // 9. 
-console.log("\n9. Now remove liquidity at 3%");
+console.log("\n11. Now remove liquidity at 3%");
 
 var updateTick3 = ticks.get(3)!;
 const baseOut = updateTick3['value'];

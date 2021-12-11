@@ -1293,3 +1293,42 @@ export function valueAtTick(
 
   return sv_out;
 }
+
+
+
+/**
+ * Calculate the invariant. 
+ * @param { BigNumber | string } baseReserves
+ * @param { BigNumber | string } fyTokenReserves
+ * @param { BigNumber | string } fyToken
+ * @param { BigNumber | string } timeTillMaturity
+ * @param { number } decimals
+ * @param { boolean } withNoFee
+ * @returns { BigNumber, BigNumber } x_end, y_end
+ */
+export function simpleInvariant(
+  baseReserves: BigNumber | string,
+  fyTokenReserves: BigNumber | string,
+  timeTillMaturity: BigNumber | string,
+  decimals: number, // optional : default === 18
+  withNoFee: boolean = false // optional: default === false
+): BigNumber {
+  /* convert to 18 decimals, if required */
+  const baseReserves18 = decimalNToDecimal18(BigNumber.from(baseReserves), decimals);
+  const fyTokenReserves18 = decimalNToDecimal18(BigNumber.from(fyTokenReserves), decimals);
+
+  const baseReserves_ = new Decimal(baseReserves18.toString());
+  const fyTokenReserves_ = new Decimal(fyTokenReserves18.toString());
+  const wad_ = new Decimal(WAD_BN.toString());
+
+  const _g = ONE;
+  const [a, invA] = _computeA(timeTillMaturity, _g);
+  
+  const Za = baseReserves_.pow(a);
+  const Ya = fyTokenReserves_.pow(a);
+  const ZYsum =  Ya.add(Za);
+  
+  const out = toBn(ZYsum); 
+
+  return out;
+}
