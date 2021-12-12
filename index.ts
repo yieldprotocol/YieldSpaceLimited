@@ -452,11 +452,55 @@ const oFyToThreeTick = oBaseRatioForToAdd.mul(oFyEquivalent).div(WAD_BN);
 console.log("baseToThreeTick", baseToThreeTick.toString());
 console.log("fyToThreeTick",fyToThreeTick.toString());
 
+const oBaseAtThreeTick = oBaseToThreeTick.sub(oBaseEquivalent);
+const oFyAtThreeTick = oFyToThreeTick.sub(oFyEquivalent);
+const baseAboveThreeToBaseBelow = oBaseEquivalent.mul(WAD_BN).div(oValAbove.add(oVal));
 
+const oBaseBelowThreeTick = oBaseAtThreeTick.mul(WAD_BN).div(baseAboveThreeToBaseBelow);
+const oFyBelowThreeTick = oFyAtThreeTick.mul(WAD_BN).div(baseAboveThreeToBaseBelow);
 
-
+//Now Project valueAbove to the 1% tick
 
 const oneRatio = tickNumberToRatio(1, ts);
+
+const [baseToTrade763, fyToTrade763] = tradeToTick(
+  oValAbove,
+  oValAbove.mul(threeRatio).div(WAD_BN),
+  oneRatio,
+  time,
+  18,
+  true
+);
+
+const oValAboveAtOneTick = oValAbove.add(baseToTrade763);
+const valueAtOneTick = oBaseBelowThreeTick.mul(oValAboveAtOneTick).div(oValAbove);
+
+console.log("oValAboveAtOneTick", oValAboveAtOneTick.toString());
+console.log("valueAtOneTick", valueAtOneTick.toString());
+
+// make updates
+
+const oneTickInit = {
+  value: valueAtOneTick,
+  shares: valueAtOneTick,
+  valueAbove: oValAboveAtOneTick,
+  addedFy: valueAtOneTick.mul(oneRatio).div(WAD_BN),
+  fyRemaining: ZERO_BN
+}
+ticks.set(1, oneTickInit);
+
+var updateTick3 = ticks.get(3)!;
+updateTick3['valueAbove'] = updateTick3['valueAbove'].add(oBaseBelowThreeTick);
+ticks.set(3, updateTick3)
+
+currentBase = currentBase.add(newBase);
+currentFy = oFyTokenReservesAfterAdd;
+
+console.log("base after trade", currentBase.toString());
+console.log("fyToken after trade", currentFy.toString());
+
+
+
 
 // 6.
 console.log("\n8. Now trade back to 3% ");
