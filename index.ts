@@ -5,144 +5,26 @@ import { Decimal } from 'decimal.js';
 
 var time = "7776000";
 //var time = "7776000";
-
-// Before adding liquidity at tick
-var preBase = BigNumber.from("1000000000000000000000");
-var preFyTokens = BigNumber.from("1100000000000000000000");
-
-// Liquidity to Add at Tick
-var addedBase = BigNumber.from("100000000000000000000");
-var addedFyTokens = BigNumber.from("110000000000000000000");
-
-//totals
-var totalBase = preBase.add(addedBase);
-var totalFyTokens = preFyTokens.add(addedFyTokens);
-
-console.log("totalBase:", totalBase.toString())
-console.log("totalFyTokens", totalFyTokens.toString())
-
-
-// var rt = result.mul(WAD_BN).div(BigNumber.from(fyT)).toString();
-// var r2 = result.mul(WAD_BN).div(BigNumber.from(fyT));
-// const e = new Decimal(r2.toString());
-
-// Trade 1 
-// Trade size
-var fyT = BigNumber.from("50000000000000000000");
-
-// make trade
-var result = sellFYToken(totalBase, totalFyTokens, fyT, time, 18, false);
-
-//update Totals
-var totalBase_2 = totalBase.sub(result);
-var totalFyTokens_2 = totalFyTokens.add(fyT);
-
-console.log("\n*** Trade 1 ***",);
-console.log("sold", fyT.toString(), "fyTokens for ", result.toString(), "base tokens ");
-console.log("base reserves after:", totalBase_2.toString());
-console.log("fyToken reserves after:", totalFyTokens_2.toString());
-
-// Trade 1 
-// Trade size
-var fyT = BigNumber.from("50000000000000000000");
-
-// make trade
-var result2 = sellFYToken(totalBase_2, totalFyTokens_2, fyT, time, 18, false);
-
-//update Totals
-var totalBase_3 = totalBase_2.sub(result2);
-var totalFyTokens_3 = totalFyTokens_2.add(fyT);
-
-console.log("\n*** Trade 2 ***",);
-console.log("sold", fyT.toString(), "fyTokens for ", result2.toString(), "base tokens ");
-console.log("base reserves after:", totalBase_3.toString());
-console.log("fyToken reserves after:", totalFyTokens_3.toString());
-
-
-const baseAtTick_ = new Decimal(totalBase.toString());
-const fyTokenAtTick_ = new Decimal(totalFyTokens.toString());
-const wad_ = new Decimal(WAD_BN.toString());
-const tick_ = fyTokenAtTick_.mul(wad_).div(baseAtTick_);
-const tick = toBn(tick_);
-
-console.log("\n*** Trade down to Tick ***",);
-console.log("tick", tick_.toString());
-console.log("tick", tick.toString());
-
-const [b1, f1] = tradeToTick(
-  totalBase_3,
-  totalFyTokens_3,
-  tick,
-  time,
-  18,
-  false
-);
-
-console.log(
-  "fyToken traded", f1.toString(),
-  "base traded", b1.toString()
-);
-
-//update Totals
-var totalBase_4 = totalBase_3.add(b1);
-var totalFyTokens_4 = totalFyTokens_3.add(f1);
-console.log("base reserves after:", totalBase_4.toString());
-console.log("fyToken reserves after:", totalFyTokens_4.toString());
-
-
-
-// Trade up to Tick
-console.log("\n*** Trade up to Tick ***",);
-
-const tick_2 = (new Decimal(1.5)).mul(wad_);
-const tick2 = toBn(tick_2);
-
-console.log("tick_", tick_2.toString());
-console.log("tick", tick2.toString());
-
-const [b2, f2] = tradeToTick(
-  totalBase_3,
-  totalFyTokens_3,
-  tick2,
-  time,
-  18,
-  false
-);
-
-console.log(
-  "fyToken traded", f2.toString(),
-  "base traded", b2.toString()
-);
-
-console.log("b2", b2.toString());
-console.log("f2", f2.toString());
-
-//update Totals
-var totalBase_5 = totalBase_3.add(b2);
-var totalFyTokens_5 = totalFyTokens_3.add(f2);
-console.log("base reserves after:", totalBase_5.toString());
-console.log("fyToken reserves after:", totalFyTokens_5.toString());
-
-
-console.log("\n*** Time Stretch ***",);
 export const SECONDS_PER_YEAR: number = 365 * 24 * 60 * 60;
 export const secondsInOneYear = BigNumber.from(31557600);
 export const secondsInTenYears = secondsInOneYear.mul(10);
 const ts = new Decimal(1 / secondsInTenYears.toNumber());
-const ts_result = tsToRate(ts, time);
-console.log("time stretch", ts)
-console.log("interest rate", ts_result);
+Decimal.set({ rounding: 8, precision: 20 });
+/**
+ * Calculate fyToken to Base ratio from tick index.
+ * @param { Decimal } index 
+ * @param { Decimal } ts // timestretch
+ * @returns { BigNumber } 
+ */
+export const pprint = (
+  value : BigNumber
+): string => {
+  const wad_ = new Decimal(WAD_BN.toString());
+  const out = new Decimal(value.toString());
+  return out.div(wad_).toFixed(2);
+}
 
-const ts2_result = tsToRate2(ts);
-console.log("Now interest rate with ts2", ts2_result);
-
-
-console.log("\n*** Ticks to ratios ***",);
-console.log("Tick 0", tickNumberToRatio(0, ts).toString());
-console.log("Tick 1", tickNumberToRatio(1, ts).toString());
-console.log("Tick 10", tickNumberToRatio(10, ts).toString());
-
-
+console.log("pprint test", pprint(WAD_BN));
 
 console.log("\n*** Example operations ***",);
 
@@ -174,8 +56,8 @@ var currentBase = base;
 var currentFy = base;
 var virtualFy = currentFy;
 var valueAbove = ZERO_BN;
-console.log("base after trade", currentBase.toString());
-console.log("fyToken after trade", currentFy.toString());
+console.log("base after trade", pprint(currentBase));
+console.log("fyToken after trade", pprint(currentFy));
 
 // 2. 
 console.log("\n2. Now add liquidity at 3%");
@@ -191,7 +73,7 @@ var entry = {value: baseToAdd,
 ticks.set(3, entry)
 //console.log("3% tick", ticks.get(3));
 const threeRatio = tickNumberToRatio(3, ts);
-console.log("3% ratio", threeRatio.toString());
+console.log("3% ratio", pprint(threeRatio));
 
 // 3. 
 console.log("\n3. Now trade to 3%");
@@ -211,8 +93,8 @@ currentFy = currentFy.add(fyToTrade928);
 valueAbove = ZERO_BN;
 activeTick = 0;
 
-console.log("base after trade", currentBase.toString());
-console.log("fyToken after trade", currentFy.toString());
+console.log("base after trade", pprint(currentBase));
+console.log("fyToken after trade", pprint(currentFy));
 
 // 4. 
 console.log("\n4. Now add 3% liquidity to active pool");
@@ -220,8 +102,8 @@ console.log("\n4. Now add 3% liquidity to active pool");
 var baseToAdd425 = ticks.get(3)!['value'];
 var fyToAdd425  = threeRatio.mul(baseToAdd425).div(WAD_BN);
 
-console.log("base to add ", baseToAdd425.toString())
-console.log("fyToken to add ", fyToAdd425.toString())
+console.log("base to add ", pprint(baseToAdd425))
+console.log("fyToken to add ", pprint(fyToAdd425))
 
 //const updateTick3 = {value: ticks.get(3)!['value'], 
 //shares: ticks.get(3)!['shares'], 
@@ -238,9 +120,9 @@ currentBase = currentBase.add(baseToAdd425);
 currentFy = currentFy.add(fyToAdd425);
 activeTick = 3;
 
-console.log("base after adding to active pool", currentBase.toString());
-console.log("fyToken after adding to active pool", currentFy.toString());
-console.log("three ratio", threeRatio.toString())
+console.log("base after adding to active pool", pprint(currentBase));
+console.log("fyToken after adding to active pool", pprint(currentFy));
+console.log("three ratio", pprint(threeRatio))
 
 // 5 .
 console.log("\n5. Now trade to 10% ");
@@ -259,8 +141,8 @@ const [baseToTrade810, fyToTrade810] = tradeToTick(
 currentBase = currentBase.add(baseToTrade810);
 currentFy = currentFy.add(fyToTrade810);
 
-console.log("base after trade", currentBase.toString());
-console.log("fyToken after trade", currentFy.toString());
+console.log("base after trade", pprint(currentBase));
+console.log("fyToken after trade", pprint(currentFy));
 
 // Examine addition properties of invariant
 /*
@@ -317,9 +199,9 @@ var tickInfo = ticks.get(3)!;
 const val = tickInfo['value'];
 const valAbove = tickInfo['valueAbove'];
 const threeShares = tickInfo['shares'];
-console.log("Three: value", val.toString());
-console.log("Three: valAbove", valAbove.toString());
-console.log("Three: shares", threeShares.toString());
+console.log("Three: value", pprint(val));
+console.log("Three: valAbove", pprint(valAbove));
+console.log("Three: shares", pprint(threeShares));
 
 const [baseToTrade712, fyToTrade712] = tradeToTick(
   currentBase,
@@ -334,13 +216,13 @@ const baseEquivalent = currentBase.add(baseToTrade712);
 const fyEquivalent = currentFy.add(fyToTrade712);
 const valueRecorded = val.add(valAbove);
 
-console.log("current base", currentBase.toString());
-console.log("base equivalent at tick", baseEquivalent.toString());
-console.log("fy equivalent at tick", fyEquivalent.toString());
-console.log("value Recorded", valueRecorded.toString());
+console.log("current base", pprint(currentBase));
+console.log("base equivalent at tick", pprint(baseEquivalent));
+console.log("fy equivalent at tick", pprint(fyEquivalent));
+console.log("value Recorded", pprint(valueRecorded));
 
 const b_v_ratio = baseEquivalent.mul(WAD_BN).div(valueRecorded);
-console.log("base equivalent/value Recorded", b_v_ratio.toString());
+console.log("base equivalent/value Recorded", pprint(b_v_ratio));
 
 console.log("Add 100 base")
 
@@ -350,14 +232,14 @@ const baseForToAdd = WAD_BN.mul(100);
 const baseRatioForToAdd = baseForToAdd.add(currentBase).mul(WAD_BN).div(currentBase);
 const fyTokenReservesAfterAdd = baseRatioForToAdd.mul(currentFy).div(WAD_BN); 
 const fyTokensToAdd = fyTokenReservesAfterAdd.sub(currentFy);
-console.log("fyTokens to Add", fyTokensToAdd.toString());
-console.log("baseRatioForToAdd", baseRatioForToAdd.toString());
-console.log("fyTokenReservesAfterAdd", fyTokenReservesAfterAdd.toString());
+console.log("fyTokens to Add", pprint(fyTokensToAdd));
+console.log("baseRatioForToAdd", pprint(baseRatioForToAdd));
+console.log("fyTokenReservesAfterAdd", pprint(fyTokenReservesAfterAdd));
 
 const baseToThreeTick = baseRatioForToAdd.mul(baseEquivalent).div(WAD_BN);
 const fyToThreeTick = baseRatioForToAdd.mul(fyEquivalent).div(WAD_BN);
-console.log("baseToThreeTick", baseToThreeTick.toString());
-console.log("fyToThreeTick",fyToThreeTick.toString());
+console.log("baseToThreeTick", pprint(baseToThreeTick));
+console.log("fyToThreeTick",pprint(fyToThreeTick));
 
 
 // 2
@@ -374,25 +256,25 @@ const [baseToTrade216, fyToTrade216] = tradeToTick(
 const currentBase456 = baseForToAdd.add(currentBase).add(baseToTrade216);
 const currentFy456 = fyTokenReservesAfterAdd.add(fyToTrade216);
 
-console.log("\nbase after add and project", currentBase456.toString());
-console.log("fyToken after add and project", currentFy456.toString());
+console.log("\nbase after add and project", pprint(currentBase456));
+console.log("fyToken after add and project", pprint(currentFy456));
 
 //calculate new_base project to three tick 
 
 const addedBaseProjected = currentBase456.sub(baseEquivalent);
 const addedFyProjected = currentFy456.sub(fyEquivalent);
-console.log("addedBaseProjected", addedBaseProjected.toString());
-console.log("addedFyProjected", addedFyProjected.toString());
+console.log("addedBaseProjected", pprint(addedBaseProjected));
+console.log("addedFyProjected", pprint(addedFyProjected));
 
 
 const delta_three_value = addedBaseProjected;
 const delta_three_shares = addedBaseProjected.mul(WAD_BN).div(b_v_ratio);
 const virtualFyAdded = addedBaseProjected.mul(threeRatio).div(WAD_BN);
 const actualFyAdded = fyTokensToAdd.sub(virtualFyAdded);
-console.log("delta_three_value", delta_three_shares.toString());
-console.log("delta_three_shares", delta_three_shares.toString());
-console.log("virtualFyAdded", virtualFyAdded.toString());
-console.log("actualFyAdded", actualFyAdded.toString());
+console.log("delta_three_value", pprint(delta_three_shares));
+console.log("delta_three_shares", pprint(delta_three_shares));
+console.log("virtualFyAdded", pprint(virtualFyAdded));
+console.log("actualFyAdded", pprint(actualFyAdded));
 
 const finalBase = currentBase.add(baseForToAdd);
 const finalFyTokens = currentFy.add(fyTokensToAdd); 
@@ -410,8 +292,8 @@ ticks.set(3, updateTick3)
 currentBase = finalBase;
 currentFy = finalFyTokens;
 
-console.log("base after add", currentBase.toString());
-console.log("fyToken after add", currentFy.toString());
+console.log("base after add", pprint(currentBase));
+console.log("fyToken after add", pprint(currentFy));
 
 
 
@@ -424,10 +306,10 @@ const newBase = WAD_BN.mul(100);
 const oBaseRatioForToAdd = newBase.add(currentBase).mul(WAD_BN).div(currentBase);
 const oFyTokenReservesAfterAdd = oBaseRatioForToAdd.mul(currentFy).div(WAD_BN); 
 const oFyTokensToAdd = oFyTokenReservesAfterAdd.sub(currentFy);
-console.log("Base to Add", newBase.toString());
-console.log("fyTokens to Add", oFyTokensToAdd.toString());
-console.log("baseRatioForToAdd", oBaseRatioForToAdd.toString());
-console.log("fyTokenReservesAfterAdd", oFyTokenReservesAfterAdd.toString());
+console.log("Base to Add", pprint(newBase));
+console.log("fyTokens to Add", pprint(oFyTokensToAdd));
+console.log("baseRatioForToAdd", pprint(oBaseRatioForToAdd));
+console.log("fyTokenReservesAfterAdd", pprint(oFyTokenReservesAfterAdd));
 
 
 const [baseToTrade634, fyToTrade634] = tradeToTick(
@@ -449,8 +331,8 @@ const oValueRecorded = oVal.add(oValAbove);
 
 const oBaseToThreeTick = oBaseRatioForToAdd.mul(oBaseEquivalent).div(WAD_BN);
 const oFyToThreeTick = oBaseRatioForToAdd.mul(oFyEquivalent).div(WAD_BN);
-console.log("baseToThreeTick", baseToThreeTick.toString());
-console.log("fyToThreeTick",fyToThreeTick.toString());
+console.log("baseToThreeTick", pprint(baseToThreeTick));
+console.log("fyToThreeTick",pprint(fyToThreeTick));
 
 const oBaseAtThreeTick = oBaseToThreeTick.sub(oBaseEquivalent);
 const oFyAtThreeTick = oFyToThreeTick.sub(oFyEquivalent);
@@ -475,8 +357,8 @@ const [baseToTrade763, fyToTrade763] = tradeToTick(
 const oValAboveAtOneTick = oValAbove.add(baseToTrade763);
 const valueAtOneTick = oBaseBelowThreeTick.mul(oValAboveAtOneTick).div(oValAbove);
 
-console.log("oValAboveAtOneTick", oValAboveAtOneTick.toString());
-console.log("valueAtOneTick", valueAtOneTick.toString());
+console.log("oValAboveAtOneTick", pprint(oValAboveAtOneTick));
+console.log("valueAtOneTick", pprint(valueAtOneTick));
 
 // make updates
 
@@ -496,8 +378,8 @@ ticks.set(3, updateTick3)
 currentBase = currentBase.add(newBase);
 currentFy = oFyTokenReservesAfterAdd;
 
-console.log("base after trade", currentBase.toString());
-console.log("fyToken after trade", currentFy.toString());
+console.log("base after trade", pprint(currentBase));
+console.log("fyToken after trade", pprint(currentFy));
 
 
 
@@ -517,8 +399,8 @@ const [baseToTrade361, fyToTrade361] = tradeToTick(
 currentBase = currentBase.add(baseToTrade361);
 currentFy = currentFy.add(fyToTrade361);
 
-console.log("base after trade", currentBase.toString());
-console.log("fyToken after trade", currentFy.toString());
+console.log("base after trade", pprint(currentBase));
+console.log("fyToken after trade", pprint(currentFy));
 
 // 7.
 console.log("\n9. Now remove 3% liquidity from active pool");
@@ -534,14 +416,14 @@ var updateTick3 = ticks.get(3)!;
 updateTick3['fyRemaining'] = fyToRemove.sub(updateTick3['addedFy']);
 ticks.set(3, updateTick3)
 
-console.log("base to remove", baseToRemove.toString());
-console.log("fyToken to remove", fyToRemove.toString());
+console.log("base to remove", pprint(baseToRemove));
+console.log("fyToken to remove", pprint(fyToRemove));
 
 currentBase = currentBase.sub(baseToRemove);
 currentFy = currentFy.sub(fyToRemove);
 
-console.log("base after trade", currentBase.toString());
-console.log("fyToken after trade", currentFy.toString());
+console.log("base after trade", pprint(currentBase));
+console.log("fyToken after trade", pprint(currentFy));
 
 // 8. 
 console.log("\n10. Now trade to 2%");
@@ -560,8 +442,8 @@ const [baseToTrade462, fyToTrade462] = tradeToTick(
 currentBase = currentBase.add(baseToTrade462);
 currentFy = currentFy.add(fyToTrade462);
 
-console.log("base after trade", currentBase.toString());
-console.log("fyToken after trade", currentFy.toString());
+console.log("base after trade", pprint(currentBase));
+console.log("fyToken after trade", pprint(currentFy));
 
 // 9. 
 console.log("\n11. Now remove liquidity at 3%");
@@ -571,9 +453,9 @@ const baseOut = updateTick3['value'];
 const fyOut = updateTick3['fyRemaining'];
 const sharesRedeemed = updateTick3['shares'];
 
-console.log("base out",  baseOut.toString());
-console.log("fyTokens out", fyOut.toString());
-console.log("shares redeemed", sharesRedeemed.toString());
+console.log("base out",  pprint(baseOut));
+console.log("fyTokens out", pprint(fyOut));
+console.log("shares redeemed", pprint(sharesRedeemed));
 
 ticks.delete(3);
 
